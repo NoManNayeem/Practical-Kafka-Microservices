@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+aiokafka
+sqlalchemy
+psycopg[binary]
+python-dotenv
