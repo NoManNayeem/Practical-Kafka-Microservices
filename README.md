@@ -27,12 +27,14 @@ The system consists of the following containerized services:
     -   **Security**: Internal-only service (no external ports exposed).
 
 4.  **Notification Service (Flask)**:
-    -   **Role**: User Alerts.
+    -   **Role**: User Alerts & Status tracking.
+    -   **Database**: Redis (State persistence).
     -   **Action**: Consumes `order_validated` events and updates the order status for the frontend.
 
 5.  **Infrastructure**:
     -   **Kafka**: Message broker for asynchronous communication.
     -   **Zookeeper**: Coordination service for Kafka.
+    -   **Redis**: In-memory data store for notification state.
     -   **Docker Compose**: Orchestration, networking, and healthchecks.
 
 ## 🛠️ Tech Stack
@@ -43,7 +45,7 @@ The system consists of the following containerized services:
     -   **FastAPI**: High-performance, async framework for the Inventory Service.
     -   **Flask**: Lightweight framework for the Notification Service.
 -   **Messaging**: Apache Kafka, Zookeeper.
--   **Database**: PostgreSQL 15.
+-   **Database**: PostgreSQL 15, Redis 7.
 -   **DevOps**: Docker, Docker Compose (Healthchecks, Restart Policies).
 
 ## 📦 Installation & Setup

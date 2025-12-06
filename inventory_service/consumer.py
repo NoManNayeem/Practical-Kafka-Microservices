@@ -10,11 +10,11 @@ import os
 logger = logging.getLogger(__name__)
 
 async def consume_orders():
+    # Remove value_deserializer from init to handle errors manually
     consumer = AIOKafkaConsumer(
         'order_created',
         bootstrap_servers=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
-        group_id='inventory_group',
-        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+        group_id='inventory_group'
     )
     
     producer = AIOKafkaProducer(
@@ -28,14 +28,19 @@ async def consume_orders():
         logger.info("Inventory Consumer started")
         
         async for msg in consumer:
-            order_data = msg.value
-            logger.info(f"Received order: {order_data}")
-            
-            # Process order
-            await process_order(order_data, producer)
+            try:
+                order_data = json.loads(msg.value.decode('utf-8'))
+                logger.info(f"Received order: {order_data}")
+                
+                # Process order
+                await process_order(order_data, producer)
+            except json.JSONDecodeError:
+                logger.error(f"Failed to decode message: {msg.value}")
+            except Exception as e:
+                logger.error(f"Error processing message: {e}")
             
     except Exception as e:
-        logger.error(f"Error in consumer: {e}")
+        logger.error(f"Critical Error in consumer: {e}")
     finally:
         await consumer.stop()
         await producer.stop()
@@ -43,9 +48,14 @@ async def consume_orders():
 async def process_order(order_data, producer):
     db = SessionLocal()
     try:
-        item_name = order_data['item']
-        quantity = order_data['quantity']
+        item_name = order_data.get('item')
+        quantity = order_data.get('quantity')
+        order_id = order_data.get('id')
         
+        if not item_name or not quantity or not order_id:
+            logger.error(f"Invalid order data: {order_data}")
+            return
+
         # Simple logic: check if item exists and has enough quantity
         # For demo, let's assume we have infinite stock if item starts with 'A'
         # or we can seed DB.
@@ -54,7 +64,7 @@ async def process_order(order_data, producer):
         status = 'VALIDATED' if quantity > 0 else 'REJECTED'
         
         validation_event = {
-            'order_id': order_data['id'],
+            'order_id': order_id,
             'status': status
         }
         
@@ -62,6 +72,6 @@ async def process_order(order_data, producer):
         logger.info(f"Sent validation event: {validation_event}")
         
     except Exception as e:
-        logger.error(f"Error processing order: {e}")
+        logger.error(f"Error processing order logic: {e}")
     finally:
         db.close()

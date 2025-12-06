@@ -4,3 +4,4 @@ psycopg[binary]
 kafka-python
 python-dotenv==1.0
 django-cors-headers
+tenacity

@@ -2,3 +2,4 @@ flask
 kafka-python
 python-dotenv
 flask-cors
+redis
